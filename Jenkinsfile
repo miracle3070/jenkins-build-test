@@ -5,10 +5,11 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 script {
+                    sh("cat /etc/issue")
                     // Alpine-based systems
                     def installCurl = "apk update && apk add curl"
                     def installJq = "apk add jq"
-
+	      
                     sh(installCurl)
                     sh(installJq)
                 }
