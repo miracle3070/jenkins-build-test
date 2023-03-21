@@ -19,9 +19,9 @@ pipeline {
                     def commit_built_by_jenkins = { commit_hash ->
                         def builds
 
-                        withCredentials([string(credentialsId: 'jenkins-api-token', variable: 'jenkins_auth')]) {
-                            builds = sh(script: "curl -s --user \"\$jenkins_auth\" \"$jenkins_url/job/$job_name/api/json?tree=builds%5Bid%2Cresult%2Cactions%5BlastBuiltRevision%5BSHA1%5D%5D%5D&depth=2\"", returnStdout: true).trim()
-                        }
+                        withCredentials([usernamePassword(credentialsId: 'jenkins-api-token', usernameVariable: 'jenkins_username', passwordVariable: 'jenkins_token')]) {
+                            builds = sh(script: "curl -s --user \"\$jenkins_username:\$jenkins_token\" \"$jenkins_url/job/$job_name/api/json?tree=builds%5Bid%2Cresult%2Cactions%5BlastBuiltRevision%5BSHA1%5D%5D%5D&depth=2\"", returnStdout: true).trim()
+                }
 
                         // Check if the commit hash appears in a build with a non-null result
                         def jq_query = ".builds[] | select(.actions[].lastBuiltRevision.SHA1==\"$commit_hash\" and .result!=null) | .result"
