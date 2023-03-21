@@ -19,7 +19,7 @@ pipeline {
                     def commit_built_by_jenkins = { commit_hash ->
                         def builds
 
-                        withCredentials([string(credentialsId: '119eba255283ed743e63fa143cf5598dad', variable: 'jenkins_auth')]) {
+                        withCredentials([string(credentialsId: 'jenkins-api-token', variable: 'jenkins_auth')]) {
                             builds = sh(script: "curl -s --user \"\$jenkins_auth\" \"$jenkins_url/job/$job_name/api/json?tree=builds%5Bid%2Cresult%2Cactions%5BlastBuiltRevision%5BSHA1%5D%5D%5D&depth=2\"", returnStdout: true).trim()
                         }
 
