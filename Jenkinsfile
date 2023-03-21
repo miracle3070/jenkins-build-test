@@ -6,8 +6,8 @@ pipeline {
             steps {
                 script {
                     // Ubuntu-based systems
-                    def installCurl = "sudo apt-get update && sudo apt-get install -y curl"
-                    def installJq = "sudo apt-get install -y jq"
+                    def installCurl = "apt-get update && sudo apt-get install -y curl"
+                    def installJq = "apt-get install -y jq"
 	      
                     sh(installCurl)
                     sh(installJq)
