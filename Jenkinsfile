@@ -2,6 +2,19 @@ pipeline {
     agent any
 
     stages {
+        stage('Install Dependencies') {
+            steps {
+                script {
+                    // Alpine-based systems
+                    def installCurl = "apk update && apk add curl"
+                    def installJq = "apk add jq"
+
+                    sh(installCurl)
+                    sh(installJq)
+                }
+            }
+        }
+
         stage('Check if commit was built') {
             steps {
                 script {
