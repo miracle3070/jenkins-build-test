@@ -2,19 +2,6 @@ pipeline {
     agent any
 
     stages {
-        stage('Install Dependencies') {
-            steps {
-                script {
-                    // Ubuntu-based systems
-                    def installCurl = "apt-get update && sudo apt-get install -y curl"
-                    def installJq = "apt-get install -y jq"
-	      
-                    sh(installCurl)
-                    sh(installJq)
-                }
-            }
-        }
-
         stage('Check if commit was built') {
             steps {
                 script {
