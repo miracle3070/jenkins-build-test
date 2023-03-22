@@ -1,54 +1,73 @@
 pipeline {
     agent any
 
+    environment {
+        GIT_URL = 'https://github.com/miracle3070/jenkins-build-test'
+        JENKINS_URL = 'http://172.20.245.32:8080/'
+        JOB_NAME = 'jenkins-build-test-pipeline'
+        AUTHENTICATION_ID = 'jenkins_api_token123'
+    }
+
     stages {
-        stage('Check if commit was built') {
+        stage('Check Commit Hash') {
             steps {
                 script {
-                    // Jenkins configuration
-                    def jenkins_url = "http://172.20.245.32:8080"
-                    def job_name = "repository-build-test"
+                    // Get the latest commit hash from the remote repository
+                    def latestCommit = sh(script: "git ls-remote ${GIT_URL} HEAD | awk '{print \$1}'", returnStdout: true).trim()
+                    echo "Latest commit hash: ${latestCommit}"
 
-                    // Get the current build hash
-                    def current_build_hash = sh(script: "git rev-parse HEAD", returnStdout: true).trim()
+                    def buildStatusUrl = "${JENKINS_URL}/job/${JOB_NAME}/api/json?tree=allBuilds[result,actions[buildsByBranchName[*[*]]]]"
+                    def buildStatusResponse = httpRequest(url: buildStatusUrl, authentication: AUTHENTICATION_ID, acceptType: 'APPLICATION_JSON')
+                    def buildStatusJson = readJSON text: buildStatusResponse.content
 
-                    // Get the previous commit hashes (e.g., the last 10 commits)
-                    def previous_commit_hashes = sh(script: "git log --pretty=format:'%H' -n 10", returnStdout: true).trim().split('\n')
-
-                    // Function to check if a commit hash was built by Jenkins
-                    def commit_built_by_jenkins = { commit_hash ->
-                        def builds
-
-                        withCredentials([usernamePassword(credentialsId: 'jenkins-api-token', usernameVariable: 'jenkins_username', passwordVariable: 'jenkins_token')]) {
-                            builds = sh(script: "curl -s --user \"\$jenkins_username:\$jenkins_token\" \"$jenkins_url/job/$job_name/api/json?tree=builds%5Bid%2Cresult%2Cactions%5BlastBuiltRevision%5BSHA1%5D%5D%5D&depth=2\"", returnStdout: true).trim()
-                }
-
-                        // Check if the commit hash appears in a build with a non-null result
-                        def jq_query = ".builds[] | select(.actions[].lastBuiltRevision.SHA1==\"$commit_hash\" and .result!=null) | .result"
-                        def result = sh(script: "echo '${builds}' | jq -r '${jq_query}' | grep -q .; echo \$?", returnStdout: true).trim()
-
-                        return result == "0"
-                    }
-
-                    // Check if the current build hash exists in the previous commit hashes list and was built by Jenkins
-                    def alreadyBuilt = false
-                    for (commit_hash in previous_commit_hashes) {
-                        if (commit_hash == current_build_hash && commit_built_by_jenkins(commit_hash)) {
-                            echo "The current build hash ($current_build_hash) already exists in the previous commit hashes list and was built by Jenkins. Stopping the build."
-                            alreadyBuilt = true
-                            break
+                    def commitBuilt = false
+                    for (build in buildStatusJson.allBuilds) {
+                        def branchBuildInfo = build.actions.find { it.buildsByBranchName }
+                        if (branchBuildInfo) {
+                            def commitInfo = branchBuildInfo.buildsByBranchName.values().find { it.revision.SHA1 == latestCommit }
+                            if (commitInfo && build.result == 'SUCCESS') {
+                                commitBuilt = true
+                                break
+                            }
                         }
                     }
 
-                    if (!alreadyBuilt) {
-                        echo "The current build hash ($current_build_hash) does not exist in the previous commit hashes list or was not built by Jenkins. Continuing the build."
+                    if (commitBuilt) {
+                        echo "Latest commit ${latestCommit} was built successfully. Stopping the build."
+                        currentBuild.result = 'ABORTED'
+                        error("Build was aborted because the latest commit ${latestCommit} has already been built successfully.")
                     } else {
-                        error("Build stopped because the commit was already built.")
+                        echo "Latest commit ${latestCommit} was not built or not built successfully. Continuing the build."
                     }
                 }
             }
         }
 
-        // Add other stages for your build process here
+        stage('Clone Repository') {
+            steps {
+                git branch: 'master', url: "${GIT_URL}"
+            }
+        }
+
+        stage('Build') {
+            steps {
+                // Your build steps go here
+                echo "Building the project..."
+            }
+        }
+
+        stage('Test') {
+            steps {
+                // Your test steps go here
+                echo "Testing the project..."
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                // Your deploy steps go here
+                echo "Deploying the project..."
+            }
+        }
     }
 }
