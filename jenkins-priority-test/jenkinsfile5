@@ -1,0 +1,31 @@
+// Jenkins Pipeline Script
+pipeline {
+    agent none
+
+    options {
+        // Set job priority to a specific value (higher numbers have higher priority)
+        priority(priority: 5)
+    }
+
+    stages {
+        stage('Build') {
+            steps {
+                echo 'Building the project...'
+                // Your build steps go here
+                sh("sleep 20s")
+            }
+        }
+        stage('Test') {
+            steps {
+                echo 'Testing the project...'
+                // Your test steps go here
+            }
+        }
+        stage('Deploy') {
+            steps {
+                echo 'Deploying the project...'
+                // Your deploy steps go here
+            }
+        }
+    }
+}
